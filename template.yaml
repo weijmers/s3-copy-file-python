@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  S3CopyFile:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: s3_copy_file_python
+      ContentUri: .
+      CompatibleRuntimes:
+        - python3.12
+      CompatibleArchitectures:
+        - x86_64
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: makefile
+  TestBucket:
+    Type: AWS::S3::Bucket
+  TestLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: python3.12
+      MemorySize: 128
+      Timeout: 30
+      InlineCode: |
+        import os
+        
+        def handler(event, context):
+            files = os.listdir('/tmp')
+            print(" ".join(files))
+      Layers:
+        - !Ref S3CopyFile
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref TestBucket
+          S3_KEY: test.txt
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref TestBucket
